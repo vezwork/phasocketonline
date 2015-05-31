@@ -1,0 +1,24 @@
+{
+  "name": "start1.0",
+  "version": "1.0.0",
+  "description": "A server which hosts a multiplayer game written using phaser and socket.io.",
+  "main": "index.js",
+  "dependencies": {
+    "connect": "^3.3.5",
+    "express": "^4.12.4",
+    "socket.io": "^1.3.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "phaser.io",
+    "phaser.js",
+    "socket.io",
+    "game"
+
+  ],
+  "author": "vez",
+  "license": "ISC"
+}
