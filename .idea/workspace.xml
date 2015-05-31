@@ -334,7 +334,13 @@
       <option name="project" value="LOCAL" />
       <updated>1433054332347</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="prepped for heroku. (I hope) 3">
+      <created>1433055235043</created>
+      <option name="number" value="00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1433055235043</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
