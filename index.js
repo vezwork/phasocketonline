@@ -7,7 +7,6 @@ var userhashmap = {};
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');
 });
-
 app.get('/js/phaser.min.js', function(req, res){
     res.sendFile(__dirname + '/js/phaser.min.js');
 });
@@ -24,10 +23,10 @@ app.get('/assets/sky.png', function(req, res){
 
 io.on('connection', function(socket){
 
-    function communicate(status) {
+    function communicateJoin(status) {
         if (status == '+') {
             usercount += 1;
-            userhashmap[socket.id] = true;
+            userhashmap[socket.id] = [0, 0];
         } else if (status == '-') {
             usercount -= 1;
             delete userhashmap[socket.id];
@@ -43,11 +42,23 @@ io.on('connection', function(socket){
         }
     }
 
-    communicate("+");
+    communicateJoin("+");
+
+    setInterval(function(){
+        socket.emit('userhashmap', userhashmap);
+        console.log('update');
+    }, 200);
 
     socket.on('disconnect', function() {
 
-        communicate("-");
+        communicateJoin("-");
+
+    });
+    socket.on('clientinfo', function(msg) {
+
+        // TODO: only send and recieve coordinates which have changed for effeciency(applies to client too)
+        userhashmap[socket.id] = msg;
+        console.log(userhashmap[socket.id]);
 
     });
 });
