@@ -26,7 +26,7 @@ io.on('connection', function(socket){
     function communicateJoin(status) {
         if (status == '+') {
             usercount += 1;
-            userhashmap[socket.id] = [0, 0];
+            //userhashmap[socket.id] = [0, 0];
         } else if (status == '-') {
             usercount -= 1;
             delete userhashmap[socket.id];
@@ -47,7 +47,7 @@ io.on('connection', function(socket){
     setInterval(function(){
         socket.emit('userhashmap', userhashmap);
         console.log('update');
-    }, 200);
+    }, 333);
 
     socket.on('disconnect', function() {
 
@@ -58,7 +58,6 @@ io.on('connection', function(socket){
 
         // TODO: only send and recieve coordinates which have changed for effeciency(applies to client too)
         userhashmap[socket.id] = msg;
-        console.log(userhashmap[socket.id]);
 
     });
 });

@@ -35,6 +35,7 @@
     var myx;
     var myy;
     var userhashmap = {};
+    var socketid;
 
     function create() {
         game.stage.disableVisibilityChange = true;
@@ -95,16 +96,16 @@
 
     socket.on('userhashmap', function(msg){
         userhashmap = msg;
-        console.log(userhashmap);
     });
 
     socket.on('connect', function() {
-        console.log("hello " + socket.id)
+        console.log("hello " + socket.id);
+        socketid = socket.id;
 
         setInterval(function(){
             socket.emit('clientinfo', [myy, myx]);
             console.log("update");
-        }, 200);
+        }, 333);
     });
 
     function update() {
@@ -116,28 +117,48 @@
             loginText.text = login.substr(1,5) + '.. joined';
         }
 
+        //buddy control
         for(var user in userhashmap) {
             var nobuddy = true;
-            var buddycount = 0;
-            buddys.forEach(function (guy) {
-                //console.log(guy.x, guy.y);
-                if (guy.name == user) {
-                    nobuddy = false;
-                    buddycount += 1;
-                    guy.body.position.x = userhashmap[user][1];
-                    guy.body.position.y = userhashmap[user][0];
+            if (user != socketid) {
+                buddys.forEach(function (guy) {
+                    if (guy.name == user) {
+                        nobuddy = false;
+                        guy.body.position.x = userhashmap[user][1];
+                        guy.body.position.y = userhashmap[user][0];
+                        //game.physics.arcade.moveToXY(guy,userhashmap[user][1],userhashmap[user][0], 300, 150);
+
+                        //guy.body.position.x + guy.x - guy.lastx;
+                        //guy.body.position.y += guy.y - guy.lasty;
+
+                        guy.lastx = guy.x;
+                        guy.lasty = guy.y;
+                    }
+                },this);
+                if (nobuddy) {
+                    var buddy = buddys.create(userhashmap[user][0], userhashmap[user][1], 'dude');
+                    buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
+                    buddy.lastx = buddy.x;
+                    buddy.lasty = buddy.y;
+                    buddy.name = user;
+                    buddy.frame = 4;
                 }
-            },this);
-            //console.log(buddycount);
-            if (nobuddy) {
-                //console.log(userhashmap[user])
-                var buddy = buddys.create(userhashmap[user][0], userhashmap[user][1], 'dude');
-                buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
-                buddy.name = user;
-                console.log(buddy.name);
-                buddy.frame = 4;
             }
         }
+
+        //destroy buddies if they are not in the hashmap
+        buddys.forEach(function (guy) {
+            var nouser = true;
+            for(var user in userhashmap) {
+                if (guy.name == user) {
+                    nouser = false;
+                }
+            }
+            if (nouser) {
+                guy.destroy();
+            }
+        });
+
 
         game.physics.arcade.collide(player, platforms);
 
