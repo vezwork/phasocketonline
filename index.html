@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Phaser - Socket.IO</title>
+    <script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<script src="socket.io/socket.io.js"></script></script>
+<script type="text/javascript">
+
+    var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+    var socket = io();
+
+    function preload() {
+        game.load.image('sky', 'assets/sky.png');
+        game.load.image('ground', 'assets/platform.png');
+        game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+    }
+
+    var platforms;
+    var player;
+    var cursors;
+    var users = 0;
+    var userText;
+    var login = '';
+    var loginText;
+    var buddys;
+    var addBuddy = 0;
+
+    function create() {
+        game.stage.disableVisibilityChange = true;
+
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.add.sprite(0,0,'sky');
+
+        platforms = game.add.group();
+        platforms.enableBody = true;
+
+        var ground = platforms.create(0, game.world.height - 64, 'ground');
+        ground.scale.setTo(2,2);
+        ground.body.immovable = true;
+
+        var ledge = platforms.create(400,400,'ground');
+        ledge.body.immovable = true;
+        ledge = platforms.create(-150,250,'ground');
+        ledge.body.immovable = true;
+
+        //player
+        player = game.add.sprite(32, game.world.height - 150, 'dude');
+        game.physics.arcade.enable(player);
+
+        player.body.bounce.y = 0.2;
+        player.body.gravity.y = 800;
+        player.body.collideWorldBounds = true;
+
+        player.animations.add('left', [0,1,2,3], 10, true);
+        player.animations.add('right', [5,6,7,8], 10, true);
+
+        //other players (dummy)
+        buddys = game.add.group();
+
+        buddys.enableBody = true;
+
+        var buddy = buddys.create(70, 0, 'dude');
+        buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
+        buddy.body.gravity.y = 800;
+        buddy.body.bounce.y = 0.2;
+
+        cursors = game.input.keyboard.createCursorKeys();
+
+        userText = game.add.text(16, 16, 'users: 1', {fontSize: '32px', fill: '#16718F'});
+        loginText = game.add.text(200, 16, '', {fontSize: '32px', fill: '#36718F'});
+
+
+    }
+
+    socket.on('userscount', function(msg){
+        users = msg;
+    });
+
+    socket.on('playerconnect', function(msg){
+        login = msg;
+    });
+
+    socket.on('connect', function() {
+        console.log("hello " + socket.id)
+    });
+
+    function update() {
+
+        userText.text = 'users: ' + users;
+        if (login.charAt(0) === '-') {
+            loginText.text = login.substr(1,5) + '.. left';
+        } else {
+            loginText.text = login.substr(1,5) + '.. joined';
+        }
+
+
+        game.physics.arcade.collide(player, platforms);
+
+        game.physics.arcade.collide(buddys, platforms);
+
+        player.body.velocity.x = 0;
+
+        if (cursors.left.isDown)
+        {
+            // Move to the left
+            player.body.velocity.x  = -150;
+
+            player.animations.play('left');
+        }
+        else if (cursors.right.isDown)
+        {
+            player.body.velocity.x  = 150;
+
+            player.animations.play('right');
+        }
+        else
+        {
+            player.animations.stop();
+
+            player.frame = 4;
+        }
+
+        if (cursors.up.isDown && player.body.touching.down)
+        {
+            player.body.velocity.y  = -555;
+        }
+
+        if (player.body.velocity.x > 0 && !player.body.touching.down)
+        {
+            player.frame = 6;
+        }
+
+        if (player.body.velocity.x < 0 && !player.body.touching.down)
+        {
+            player.frame = 3;
+        }
+    }
+</script>
+
+</body>
+</html>
