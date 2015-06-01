@@ -11,6 +11,7 @@
     </style>
 </head>
 <body>
+A phaser.io, socket.io, and node.js with express project by vez.
 <script src="socket.io/socket.io.js"></script></script>
 <script type="text/javascript">
 
@@ -36,6 +37,7 @@
     var myy;
     var userhashmap = {};
     var socketid;
+    var buddydistancetimer;
 
     function create() {
         game.stage.disableVisibilityChange = true;
@@ -58,25 +60,15 @@
         //player
         player = game.add.sprite(32, game.world.height - 150, 'dude');
         game.physics.arcade.enable(player);
-
         player.body.bounce.y = 0.2;
         player.body.gravity.y = 800;
         player.body.collideWorldBounds = true;
-
         player.animations.add('left', [0,1,2,3], 10, true);
         player.animations.add('right', [5,6,7,8], 10, true);
 
         //other players (dummy)
         buddys = game.add.group();
-
         buddys.enableBody = true;
-
-        //var buddy = buddys.create(70, 0, 'dude');
-        //buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
-        //buddy.body.gravity.y = 800;
-        //buddy.body.bounce.y = 0.2;
-        //buddy.name = 'fred';
-        //buddy.frame = 4;
 
         cursors = game.input.keyboard.createCursorKeys();
 
@@ -102,10 +94,15 @@
         console.log("hello " + socket.id);
         socketid = socket.id;
 
-        setInterval(function(){
-            socket.emit('clientinfo', [myy, myx]);
-            console.log("update");
-        }, 333);
+        setInterval(function() {
+            //if-else if for only sending data if the character has moved
+            if (!(socket.id in userhashmap)) {
+                socket.emit('clientinfo', [myy, myx]);
+            }
+            else if (userhashmap[socket.id][0] != myy || userhashmap[socket.id][1] != myx) {
+                socket.emit('clientinfo', [myy, myx]);
+            }
+        }, 100);
     });
 
     function update() {
@@ -124,11 +121,20 @@
                 buddys.forEach(function (guy) {
                     if (guy.name == user) {
                         nobuddy = false;
-                        guy.body.position.x = userhashmap[user][1];
-                        guy.body.position.y = userhashmap[user][0];
-                        //game.physics.arcade.moveToXY(guy,userhashmap[user][1],userhashmap[user][0], 300, 150);
 
-                        //guy.body.position.x + guy.x - guy.lastx;
+                        game.physics.arcade.moveToXY(guy,userhashmap[guy.name][1],userhashmap[guy.name][0], 300, 70);
+
+                        //checks if guy gets too far away from where hes supposed to be and deals with it.
+                        if (game.physics.arcade.distanceToXY(guy,userhashmap[guy.name][1],userhashmap[guy.name][0]) > 60) { //arbitrary 60 can be fiddled with
+                            buddydistancetimer += 1;
+                            if (buddydistancetimer > 10) { //arbitrary 10 can be fiddled with
+                                guy.body.position.x = userhashmap[guy.name][1];
+                                guy.body.position.y = userhashmap[guy.name][0];
+                            }
+                        } else buddydistancetimer = 0;
+
+
+                        //guy.body.position.x =+ guy.x - guy.lastx;
                         //guy.body.position.y += guy.y - guy.lasty;
 
                         guy.lastx = guy.x;
@@ -136,11 +142,13 @@
                     }
                 },this);
                 if (nobuddy) {
-                    var buddy = buddys.create(userhashmap[user][0], userhashmap[user][1], 'dude');
+                    var buddy = buddys.create(userhashmap[user][1], userhashmap[user][0], 'dude');
                     buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
                     buddy.lastx = buddy.x;
                     buddy.lasty = buddy.y;
                     buddy.name = user;
+                    buddy.animations.add('left', [0,1,2,3], 10, true);
+                    buddy.animations.add('right', [5,6,7,8], 10, true);
                     buddy.frame = 4;
                 }
             }
@@ -205,6 +213,5 @@
         }
     }
 </script>
-A phaser.io, socket.io, and node.js with express project by vez.
 </body>
 </html>

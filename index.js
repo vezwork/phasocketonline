@@ -1,6 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+
 var usercount = 0;
 var userhashmap = {};
 var port = process.env.PORT || 3000;
@@ -45,10 +46,11 @@ io.on('connection', function(socket){
 
     communicateJoin("+");
 
-    setInterval(function(){
-        socket.emit('userhashmap', userhashmap);
-        console.log('update');
-    }, 333);
+    setInterval(function () {
+        if (usercount > 0) {
+            socket.emit('userhashmap', userhashmap);
+        }
+    }, 100);
 
     socket.on('disconnect', function() {
 
@@ -57,7 +59,6 @@ io.on('connection', function(socket){
     });
     socket.on('clientinfo', function(msg) {
 
-        // TODO: only send and recieve coordinates which have changed for effeciency(applies to client too)
         userhashmap[socket.id] = msg;
 
     });
