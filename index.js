@@ -28,15 +28,11 @@ io.on('connection', function(socket){
     function communicateJoin(status) {
         if (status == '+') {
             usercount += 1;
-            //userhashmap[socket.id] = [0, 0];
         } else if (status == '-') {
             usercount -= 1;
             delete userhashmap[socket.id];
         }
-        io.emit('playerconnect', status + socket.id);
         console.log(status + socket.id);
-
-        io.emit('userscount', usercount);
         console.log("users: " + usercount);
 
         for (var x in userhashmap) {

@@ -4,14 +4,18 @@
     <meta charset="UTF-8" />
     <title>Phaser - Socket.IO</title>
     <script type="text/javascript" src="js/phaser.min.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300' rel='stylesheet' type='text/css'>
     <style type="text/css">
         body {
-            margin: 0;
+            margin: 4;
+            color:#111;
+            font-size:14px;
+            font-family: 'Open Sans', Arial, sans-serif;
         }
     </style>
 </head>
 <body>
-A phaser.io, socket.io, and node.js with express project by vez.
+<p>A <a href="https://phaser.io/">phaser.io,</a> <a href="http://socket.io/">socket.io,</a> and <a href="https://nodejs.org/">node.js</a> with <a href="http://expressjs.com/">express</a> project by vez. Source code soon...</p>
 <script src="socket.io/socket.io.js"></script></script>
 <script type="text/javascript">
 
@@ -27,7 +31,7 @@ A phaser.io, socket.io, and node.js with express project by vez.
     var platforms;
     var player;
     var cursors;
-    var users = 0;
+    var userscount = 0;
     var userText;
     var login = ' ';
     var loginText = '';
@@ -35,6 +39,7 @@ A phaser.io, socket.io, and node.js with express project by vez.
     var addBuddy = 0;
     var myx;
     var myy;
+    var myanim;
     var userhashmap = {};
     var socketid;
     var buddydistancetimer;
@@ -78,14 +83,6 @@ A phaser.io, socket.io, and node.js with express project by vez.
     }
 
     //socket.io
-    socket.on('userscount', function(msg){
-        users = msg;
-    });
-
-    socket.on('playerconnect', function(msg){
-        login = msg;
-    });
-
     socket.on('userhashmap', function(msg){
         userhashmap = msg;
     });
@@ -97,41 +94,50 @@ A phaser.io, socket.io, and node.js with express project by vez.
         setInterval(function() {
             //if-else if for only sending data if the character has moved
             if (!(socket.id in userhashmap)) {
-                socket.emit('clientinfo', [myy, myx]);
+                socket.emit('clientinfo', [myx, myy, myanim]);
             }
             else if (userhashmap[socket.id][0] != myy || userhashmap[socket.id][1] != myx) {
-                socket.emit('clientinfo', [myy, myx]);
+                socket.emit('clientinfo', [myx, myy, myanim]);
             }
         }, 100);
     });
 
     function update() {
-
-        userText.text = 'users: ' + users;
-        if (login.charAt(0) === '-') {
-            loginText.text = login.substr(1,5) + '.. left';
-        } else {
-            loginText.text = login.substr(1,5) + '.. joined';
-        }
-
         //buddy control
+        userscount = 0;
         for(var user in userhashmap) {
+            userscount += 1;
             var nobuddy = true;
             if (user != socketid) {
                 buddys.forEach(function (guy) {
                     if (guy.name == user) {
+                        //***manipulating buddys already present in room***
                         nobuddy = false;
 
-                        game.physics.arcade.moveToXY(guy,userhashmap[guy.name][1],userhashmap[guy.name][0], 300, 70);
+                        game.physics.arcade.moveToXY(guy,userhashmap[guy.name][0],userhashmap[guy.name][1], 300, 70);
 
                         //checks if guy gets too far away from where hes supposed to be and deals with it.
-                        if (game.physics.arcade.distanceToXY(guy,userhashmap[guy.name][1],userhashmap[guy.name][0]) > 60) { //arbitrary 60 can be fiddled with
+                        if (game.physics.arcade.distanceToXY(guy,userhashmap[guy.name][0],userhashmap[guy.name][1]) > 60) { //arbitrary 60 can be fiddled with
                             buddydistancetimer += 1;
                             if (buddydistancetimer > 10) { //arbitrary 10 can be fiddled with
-                                guy.body.position.x = userhashmap[guy.name][1];
-                                guy.body.position.y = userhashmap[guy.name][0];
+                                guy.body.position.x = userhashmap[guy.name][0];
+                                guy.body.position.y = userhashmap[guy.name][1];
                             }
                         } else buddydistancetimer = 0;
+
+                        //animation stuff
+                        if (userhashmap[guy.name][2] == 'stop') {
+                            guy.animations.stop();
+                            guy.frame = 4;
+                        } else if (userhashmap[guy.name][2] == 'jump_left'){
+                            guy.animations.stop();
+                            guy.frame = 3;
+                        } else if (userhashmap[guy.name][2] == 'jump_right'){
+                            guy.animations.stop();
+                            guy.frame = 6;
+                        } else {
+                            guy.animations.play(userhashmap[guy.name][2]);
+                        }
 
 
                         //guy.body.position.x =+ guy.x - guy.lastx;
@@ -142,7 +148,7 @@ A phaser.io, socket.io, and node.js with express project by vez.
                     }
                 },this);
                 if (nobuddy) {
-                    var buddy = buddys.create(userhashmap[user][1], userhashmap[user][0], 'dude');
+                    var buddy = buddys.create(userhashmap[user][0], userhashmap[user][1], 'dude');
                     buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
                     buddy.lastx = buddy.x;
                     buddy.lasty = buddy.y;
@@ -150,9 +156,13 @@ A phaser.io, socket.io, and node.js with express project by vez.
                     buddy.animations.add('left', [0,1,2,3], 10, true);
                     buddy.animations.add('right', [5,6,7,8], 10, true);
                     buddy.frame = 4;
+
+                    loginText.text = user.substr(0,5) + '.. joined';
                 }
             }
         }
+
+        userText.text = 'users: ' + userscount;
 
         //destroy buddies if they are not in the hashmap
         buddys.forEach(function (guy) {
@@ -164,6 +174,7 @@ A phaser.io, socket.io, and node.js with express project by vez.
             }
             if (nouser) {
                 guy.destroy();
+                loginText.text = guy.name.substr(0,5) + '.. left';
             }
         });
 
@@ -183,18 +194,21 @@ A phaser.io, socket.io, and node.js with express project by vez.
             player.body.velocity.x  = -150;
 
             player.animations.play('left');
+            myanim = 'left';
         }
         else if (cursors.right.isDown)
         {
             player.body.velocity.x  = 150;
 
             player.animations.play('right');
+            myanim = 'right';
         }
         else
         {
             player.animations.stop();
 
             player.frame = 4;
+            myanim = 'stop';
         }
 
         if (cursors.up.isDown && player.body.touching.down)
@@ -204,12 +218,16 @@ A phaser.io, socket.io, and node.js with express project by vez.
 
         if (player.body.velocity.x > 0 && !player.body.touching.down)
         {
+            player.animations.stop();
             player.frame = 6;
+            myanim = 'jump_right';
         }
 
         if (player.body.velocity.x < 0 && !player.body.touching.down)
         {
+            player.animations.stop();
             player.frame = 3;
+            myanim = 'jump_left';
         }
     }
 </script>
