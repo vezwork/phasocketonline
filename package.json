@@ -4,6 +4,7 @@
   "description": "A server which hosts a multiplayer game written using phaser and socket.io.",
   "main": "index.js",
   "dependencies": {
+    "client-sessions": "^0.7.0",
     "connect": "^3.3.5",
     "express": "^4.12.4",
     "socket.io": "^1.3.5"
@@ -17,7 +18,6 @@
     "phaser.js",
     "socket.io",
     "game"
-
   ],
   "author": "vez",
   "license": "ISC"

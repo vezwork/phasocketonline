@@ -1,4 +1,5 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
@@ -9,17 +10,11 @@ var port = process.env.PORT || 3000;
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');
 });
-app.get('/js/phaser.min.js', function(req, res){
-    res.sendFile(__dirname + '/js/phaser.min.js');
-});
-app.get('/assets/platform.png', function(req, res){
-    res.sendFile(__dirname + '/assets/platform.png');
-});
-app.get('/assets/dude.png', function(req, res){
-    res.sendFile(__dirname + '/assets/dude.png');
-});
-app.get('/assets/sky.png', function(req, res){
-    res.sendFile(__dirname + '/assets/sky.png');
+app.use('/assets', express.static('assets'));
+app.use('/js', express.static('js'));
+//404
+app.use(function(req, res, next) {
+    res.status(404).send('404: Sorry cant find that!');
 });
 
 
