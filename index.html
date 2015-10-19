@@ -7,7 +7,7 @@
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:300' rel='stylesheet' type='text/css'>
     <style type="text/css">
         body {
-            margin: 4;
+            margin: 4px;
             color:#111;
             font-size:14px;
             font-family: 'Open Sans', Arial, sans-serif;
@@ -16,19 +16,19 @@
 </head>
 <body>
 <p>A <a href="https://phaser.io/">phaser.io,</a> <a href="http://socket.io/">socket.io,</a> and <a href="https://nodejs.org/">node.js</a> with <a href="http://expressjs.com/">express</a> project by vez. Source code soon...</p>
-<script src="socket.io/socket.io.js"></script></script>
+<script src="socket.io/socket.io.js"></script>
 <script type="text/javascript">
 
     var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
-    var socket = io();
+    var socket = io();                                          //initialise socket connection
 
-    function preload() {
+    function preload() {                                        //preload our images
         game.load.image('sky', 'assets/sky.png');
         game.load.image('ground', 'assets/platform.png');
         game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
     }
 
-    var platforms;
+    var platforms;          //these variables are explained inline
     var player;
     var cursors;
     var userscount = 0;
@@ -71,27 +71,27 @@
         player.animations.add('left', [0,1,2,3], 10, true);
         player.animations.add('right', [5,6,7,8], 10, true);
 
-        //other players (dummy)
-        buddys = game.add.group();
+        //other players (buddy)
+        buddys = game.add.group();                      //buddys represent the other connected players
         buddys.enableBody = true;
 
         cursors = game.input.keyboard.createCursorKeys();
 
-        userText = game.add.text(16, 16, 'users: 1', {fontSize: '32px', fill: '#16718F'});
-        loginText = game.add.text(200, 16, '', {fontSize: '32px', fill: '#36718F'});
+        userText = game.add.text(16, 16, 'users: 1', {fontSize: '32px', fill: '#16718F'});  //displays num users online
+        loginText = game.add.text(200, 16, '', {fontSize: '32px', fill: '#36718F'});      //displays user join and leave
 
     }
 
     //socket.io
-    socket.on('userhashmap', function(msg){
-        userhashmap = msg;
+    socket.on('userhashmap', function(msg){             //receive other player's info
+        userhashmap = msg;                              //put the other player's info into userhashmap
     });
 
     socket.on('connect', function() {
         console.log("hello " + socket.id);
-        socketid = socket.id;
+        socketid = socket.id;                           //store socket.id for use in the game
 
-        setInterval(function() {
+        setInterval(function() {                        //send info about your character to the server
             //if-else if for only sending data if the character has moved
             if (!(socket.id in userhashmap)) {
                 socket.emit('clientinfo', [myx, myy, myanim]);
@@ -99,33 +99,33 @@
             else if (userhashmap[socket.id][0] != myy || userhashmap[socket.id][1] != myx) {
                 socket.emit('clientinfo', [myx, myy, myanim]);
             }
-        }, 100);
+        }, 100);                                        //every 100 ms
     });
 
     function update() {
         //buddy control
         userscount = 0;
-        for(var user in userhashmap) {
+        for(var user in userhashmap) {                  //iterate through all connected players
             userscount += 1;
-            var nobuddy = true;
-            if (user != socketid) {
-                buddys.forEach(function (guy) {
-                    if (guy.name == user) {
+            var nobuddy = true;                         //flag for if a buddy has been created for this user already
+            if (user != socketid) {                     //if the connected user isn't you
+                buddys.forEach(function (guy) {         //iterate through current representations of players
+                    if (guy.name == user) {             //if a guy (individual buddy) has already been created
                         //***manipulating buddys already present in room***
-                        nobuddy = false;
+                        nobuddy = false;                //a buddy has already been created for this user
 
                         game.physics.arcade.moveToXY(guy,userhashmap[guy.name][0],userhashmap[guy.name][1], 300, 70);
-
-                        //checks if guy gets too far away from where hes supposed to be and deals with it.
+                        //above: interpolate the guy's position to the current one
+                        //below: checks if a guy gets too far away from where hes supposed to be and deals with it.
                         if (game.physics.arcade.distanceToXY(guy,userhashmap[guy.name][0],userhashmap[guy.name][1]) > 60) { //arbitrary 60 can be fiddled with
                             buddydistancetimer += 1;
                             if (buddydistancetimer > 10) { //arbitrary 10 can be fiddled with
-                                guy.body.position.x = userhashmap[guy.name][0];
-                                guy.body.position.y = userhashmap[guy.name][1];
+                                guy.body.position.x = userhashmap[guy.name][0]; //snaps to non-interpolated position
+                                guy.body.position.y = userhashmap[guy.name][1]; //if too far away from it
                             }
                         } else buddydistancetimer = 0;
 
-                        //animation stuff
+                        //below: set the animations for the buddy
                         if (userhashmap[guy.name][2] == 'stop') {
                             guy.animations.stop();
                             guy.frame = 4;
@@ -139,42 +139,33 @@
                             guy.animations.play(userhashmap[guy.name][2]);
                         }
 
-
-                        //guy.body.position.x =+ guy.x - guy.lastx;
-                        //guy.body.position.y += guy.y - guy.lasty;
-
-                        guy.lastx = guy.x;
-                        guy.lasty = guy.y;
                     }
                 },this);
-                if (nobuddy) {
-                    var buddy = buddys.create(userhashmap[user][0], userhashmap[user][1], 'dude');
-                    buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
-                    buddy.lastx = buddy.x;
-                    buddy.lasty = buddy.y;
-                    buddy.name = user;
+                if (nobuddy) {  //no buddy has been created for this user, so create one
+                    var buddy = buddys.create(userhashmap[user][0], userhashmap[user][1], 'dude');  //create buddy
+                    buddy.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);   //random color
+                    buddy.name = user;                                //identify the buddy with it's corresponding user
                     buddy.animations.add('left', [0,1,2,3], 10, true);
                     buddy.animations.add('right', [5,6,7,8], 10, true);
                     buddy.frame = 4;
 
-                    loginText.text = user.substr(0,5) + '.. joined';
+                    loginText.text = user.substr(0,5) + '.. joined'; //first time creating a buddy so user just joined
                 }
             }
         }
+        userText.text = 'users: ' + userscount; //update displayed ammount of users
 
-        userText.text = 'users: ' + userscount;
-
-        //destroy buddies if they are not in the hashmap
-        buddys.forEach(function (guy) {
+        //destroy buddies if they are not in the hashmap (the user left the game)
+        buddys.forEach(function (guy) { //iterate through all buddys
             var nouser = true;
             for(var user in userhashmap) {
-                if (guy.name == user) {
-                    nouser = false;
+                if (guy.name == user) { //if the buddy represents a documented user
+                    nouser = false;     //then make sure he is not destroyed
                 }
             }
-            if (nouser) {
-                guy.destroy();
-                loginText.text = guy.name.substr(0,5) + '.. left';
+            if (nouser) {               //if the user is gone from the hashmap but the buddy still exists
+                guy.destroy();          //destroy that buddy
+                loginText.text = guy.name.substr(0,5) + '.. left';  //tell the player that the user left the game
             }
         });
 
