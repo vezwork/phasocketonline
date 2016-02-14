@@ -8,12 +8,7 @@ Example applications that use phasocketonline:
 Build guide:
 
 1. clone this repository / download and extract zip to destination of your choice
-
 2. navigate to the directory in your terminal
-
-3. 
->npm install
-
+3. type "npm install"
 4. run index.js
-5. 
 5. finished
