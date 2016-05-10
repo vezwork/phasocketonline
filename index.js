@@ -3,60 +3,51 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-var usercount = 0;
-var userhashmap = {};                                   //stores client information
-var port = process.env.PORT || 3000;                    //heroku port or default port 3000
+var Utils = require('./utils.js'); module.exports.Utils=Utils;				// Here we are loading the file utils.js like if it were a class
+var Sockets = require('./sockets.js'); module.exports.Sockets=Sockets;		// This is really useful for not having a huge cryptic file, and instead a lot of small files
 
-app.get('/', function(req, res){                        //response handler
-    res.sendFile(__dirname + '/index.html');            //default response
-});
-app.use('/assets', express.static('assets'));           //serve the assets folder
-app.use('/js', express.static('js'));                   //serve the js folder
-//404
-app.use(function(req, res, next) {                      //404 response handler
-    res.status(404).send('404: Sorry cant find that!'); //basic 404 response
+var broadcast_rate = 25; 								// Updates sent per second to the users
+var port = process.env.PORT || 3000;                    // Server-fixed port or default port 3000 for localhost
+
+app.get('/', function(req, res){                        // response handler
+    res.sendFile(__dirname + '/index.html');            // default response
 });
 
+app.use('/assets', express.static('assets'));           // serve the assets folder
+app.use('/js', express.static('js'));                   // serve the js folder
 
-io.on('connection', function(socket){                   //socket.io on connection to client
+app.use(function(req, res, next) {                      // 404 response handler
+    res.status(404).send('404: Sorry cant find that!'); // basic 404 response
+});                            							
 
-    function communicateJoin(status) {                  //function for handling socket io connections
-        if (status == '+') {                            //status just checks if you want the function to handle a join
-                                                        //or a leave
-            usercount += 1;                             //if a user joins add 1 to the usercount
-        } else if (status == '-') {
-            usercount -= 1;
-            delete userhashmap[socket.id];              //get rid of the info of the logged in socket when they leave
-        }
-        console.log(status + socket.id);
-        console.log("users: " + usercount);
 
-        for (var x in userhashmap) {                    //list connected sockets whenever someone leaves or joins
-            console.log(" |  " + x);
-        }
-    }
+io.on('connection', function(socket){                   // socket.io on connection to client
+	Sockets.add(socket);								// We add the socket to the Sockets list
+	  
+    socket.on('disconnect', function() {                // Someone leaves on socket.on('disconnect', ...
 
-    communicateJoin("+");                               //someone joins on io.on('connection', ...
-
-    setInterval(function () {                           //send out the list of connected sockets to all sockets
-        if (usercount > 0) {
-            socket.emit('userhashmap', userhashmap);
-        }
-    }, 100);                                            //every 100 ms
-
-    socket.on('disconnect', function() {                //someone leaves on socket.on('disconnect', ...
-
-        communicateJoin("-");
+		Sockets.remove(socket);							// We remove the socket from the Sockets list
 
     });
-    socket.on('clientinfo', function(msg) {             //recieve info about the socket, i.e. their x, y, animation
-
-        userhashmap[socket.id] = msg;                   //and put it in userhashmap associated with their socket id
+    socket.on('clientinfo', function(msg) {             // Recieve info about the socket, i.e. their x, y, animation
+														// (You should code your security here, or better, in the updateInfo function)
+		Sockets.updateInfo(socket, msg);                // and you store the data
 
     });
 });
 
 
-http.listen(port, function(){                           //http serving
-    console.log('listening on ' + port);
+setInterval(function () {												// Send the list of connected sockets to all sockets
+	Sockets.setHashmap();												// Here we update the userhashmap variable in order to sent it to everybody
+	for (var i = 0; i < Sockets.sockets.length; i++) {					// Here we do a for loop for every user in the sockets array
+		var socket=Sockets.sockets[i];
+		if (socket.data.loged) {										// if the user hasn't loged yet, he doesn't care about this atm
+			socket.emit('userhashmap', Sockets.getUserHashMap());		// socket.emit sends a message to the target user
+		}
+	}
+}, 1000/broadcast_rate);    											// 1 second / broadcast_rate = miliseconds between every update
+
+
+http.listen(port, function(){	// http serving
+    console.log('Server listening on ' + port);
 });
